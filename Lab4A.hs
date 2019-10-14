@@ -17,24 +17,33 @@ data BinOp = AddOp | MulOp
 -- x, your data type should not use String or Char anywhere, since this is
 -- not needed.
 
-data Expr = Expr -- change this!
-
+data Expr = Const Int
+          | Bin BinOp Expr Expr
+          | Expo  Int
 
 --------------------------------------------------------------------------------
 -- * A2
 -- Define the data type invariant that checks that exponents are never negative
 prop_Expr :: Expr -> Bool
-prop_Expr = undefined
+prop_Expr (Expo n)      = n > 0
+prop_Expr (Bin _ e1 e2) = prop_Expr e1 && prop_Expr e2
+prop_Expr _             = True
 
 
 --------------------------------------------------------------------------------
 -- * A3
 -- Make Expr an instance of Show (along the lines of the example in the lecture)
 -- You can use Haskell notation for powers: x^2
--- You should show x^1 as just x. 
+-- You should show x^1 as just x.
 
--- instance Show Expr where
---   show = undefined
+instance Show Expr where
+  show = showExpr
+
+showExpr :: Expr -> String
+showExpr (Const n)     = show n
+showExpr (Bin AddOp e1 e2) = showExpr e1 ++ " + " ++ showExpr e2
+showExpr (Bin MulOp e1 e2) = showExpr e1 ++ " * " ++ showExpr e2
+showExpr (Expo n)      = "x^" ++ show n
 
 --------------------------------------------------------------------------------
 -- * A4
@@ -66,7 +75,7 @@ eval = undefined
 exprToPoly :: Expr -> Poly
 -- Which converts an expression into a polynomial.
 -- Here it is important to think recursively to just solve the bigger problem
--- by solving the smaller problems and combining them in the right way. 
+-- by solving the smaller problems and combining them in the right way.
 
 exprToPoly = undefined
 
@@ -78,14 +87,14 @@ prop_exprToPoly = undefined
 
 --------------------------------------------------------------------------------
 -- * A7
--- Now define the function going in the other direction, 
+-- Now define the function going in the other direction,
 polyToExpr :: Poly -> Expr
 
 polyToExpr = undefined
 
 
 -- Write (and check) a quickCheck property for this function similar to
--- question 6. 
+-- question 6.
 prop_polyToExpr = undefined
 
 --------------------------------------------------------------------------------
