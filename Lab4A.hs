@@ -23,6 +23,7 @@ data Expr = Const Int
 
 
 ex1 = Bin AddOp (Const 4) (Const 3) -- 4 + 3     = 7
+ex0 = Bin AddOp (Expo 4) (Const 3) 
 ex2 = Bin MulOp (Const 6) (Const 9) -- 6 * 9     = 54
 ex3 = Bin AddOp (ex1) (ex2)         -- 7 + 54    = 61
 ex4 = Bin MulOp ex3 (Const 5)       -- 61 * 5    = 305
@@ -100,12 +101,25 @@ eval x (Bin AddOp ex1 ex2) = eval x ex1 + eval x ex2
 --------------------------------------------------------------------------------
 -- * A6
 -- Define
-exprToPoly :: Expr -> Poly
+--exprToPoly :: Expr -> Poly
 -- Which converts an expression into a polynomial.
 -- Here it is important to think recursively to just solve the bigger problem
 -- by solving the smaller problems and combining them in the right way.
 
-exprToPoly = undefined
+--exprToPoly (Const n)           = list[0] += n
+--exprToPoly (Expo n)            = list[n] += 1
+--exprToPoly (Bin MulOp ex1 ex2) =
+--exprToPoly (Bin AddOp ex1 ex2) =
+exprToList :: Expr -> [Int]
+exprToList (Const n)           = [n]
+exprToList (Expo n)            = 1:replicate n 0
+exprToList (Bin AddOp ex1 ex2) = zipWith (+) ex1' ex2'
+  where
+    ex1'           = pad (maxL - l1) list1
+    ex2'           = pad (maxL - l2) list2
+    (list1, list2) = (exprToList ex1, exprToList ex2)
+    (l1, l2, maxL) = (length list1, length list2, max l1 l2)
+    pad len list   = replicate len 0 ++ list
 
 -- Define (and check) prop_exprToPoly, which checks that evaluating the
 -- polynomial you get from exprToPoly gives the same answer as evaluating
