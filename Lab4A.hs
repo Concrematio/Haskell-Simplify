@@ -19,7 +19,7 @@ data BinOp = AddOp | MulOp
 
 data Expr = Const Int
           | Bin BinOp Expr Expr
-          | Expo  Int
+          | Expo Int
 
 
 ex1 = Bin AddOp (Const 4) (Const 3)
@@ -49,9 +49,12 @@ showExpr :: Expr -> String
 showExpr (Const n)         = show n
 showExpr (Bin AddOp e1 e2) = showExpr e1   ++ " + " ++ showExpr e2
 showExpr (Bin MulOp e1 e2) = showFactor e1 ++ " * " ++ showFactor e2
+showExpr (Expo 1)          = "x"
 showExpr (Expo n)          = "x^" ++ show n
 
+
 showFactor (Const n)         = show n
+showFactor (Expo n)          = showExpr (Expo n)
 showFactor (Bin AddOp e1 e2) = "(" ++ showExpr e1 ++ " + " ++ showExpr e2 ++ ")"
 showFactor (Bin MulOp e1 e2) =      showFactor e1 ++ " * " ++ showFactor e2
 --------------------------------------------------------------------------------
@@ -65,9 +68,22 @@ showFactor (Bin MulOp e1 e2) =      showFactor e1 ++ " * " ++ showFactor e2
 -- which gives hints to quickCheck on possible smaller expressions that it
 -- could use to find a smaller counterexample for failing tests
 
-instance Arbitrary Expr
-  where arbitrary = undefined
 
+instance Arbitrary Expr
+  where arbitrary = do n <- choose (1,3)
+                       rExpr n
+
+rExpr :: Int -> Gen Expr
+rExpr 0 = rConst
+rExpr n | n>0 = do op <- elements [(Bin MulOp),(Bin AddOp)]
+                   l  <- choose (0, n-1)
+                   e1 <- rExpr l
+                   e2 <- rExpr (n-1 - l)
+                   return (op e1 e2)
+
+rConst = do n <- choose (0,9)
+            op <- elements [Const, Expo]
+            return (op n)
 
 --------------------------------------------------------------------------------
 -- * A5
