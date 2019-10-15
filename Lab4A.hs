@@ -22,10 +22,11 @@ data Expr = Const Int
           | Expo Int
 
 
-ex1 = Bin AddOp (Const 4) (Const 3)
-ex2 = Bin MulOp (Const 6) (Const 9)
-ex3 = Bin AddOp (ex1) (ex2)
-ex4 = Bin MulOp ex3 (Const 5)
+ex1 = Bin AddOp (Const 4) (Const 3) -- 4 + 3     = 7
+ex2 = Bin MulOp (Const 6) (Const 9) -- 6 * 9     = 54
+ex3 = Bin AddOp (ex1) (ex2)         -- 7 + 54    = 61
+ex4 = Bin MulOp ex3 (Const 5)       -- 61 * 5    = 305
+ex5 = Bin MulOp ex4 (Expo 4)        -- 305 * x^4 = 190625
 
 --------------------------------------------------------------------------------
 -- * A2
@@ -91,8 +92,10 @@ rConst = do n <- choose (0,9)
 -- evaluates it
 
 eval :: Int -> Expr -> Int
-eval = undefined
-
+eval x (Expo n)            = x^n
+eval _ (Const n)           = n
+eval x (Bin MulOp ex1 ex2) = eval x ex1 * eval x ex2
+eval x (Bin AddOp ex1 ex2) = eval x ex1 + eval x ex2
 
 --------------------------------------------------------------------------------
 -- * A6
