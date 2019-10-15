@@ -21,6 +21,12 @@ data Expr = Const Int
           | Bin BinOp Expr Expr
           | Expo  Int
 
+
+ex1 = Bin AddOp (Const 4) (Const 3)
+ex2 = Bin MulOp (Const 6) (Const 9)
+ex3 = Bin AddOp (ex1) (ex2)
+ex4 = Bin MulOp ex3 (Const 5)
+
 --------------------------------------------------------------------------------
 -- * A2
 -- Define the data type invariant that checks that exponents are never negative
@@ -40,11 +46,14 @@ instance Show Expr where
   show = showExpr
 
 showExpr :: Expr -> String
-showExpr (Const n)     = show n
-showExpr (Bin AddOp e1 e2) = showExpr e1 ++ " + " ++ showExpr e2
-showExpr (Bin MulOp e1 e2) = showExpr e1 ++ " * " ++ showExpr e2
-showExpr (Expo n)      = "x^" ++ show n
+showExpr (Const n)         = show n
+showExpr (Bin AddOp e1 e2) = showExpr e1   ++ " + " ++ showExpr e2
+showExpr (Bin MulOp e1 e2) = showFactor e1 ++ " * " ++ showFactor e2
+showExpr (Expo n)          = "x^" ++ show n
 
+showFactor (Const n)         = show n
+showFactor (Bin AddOp e1 e2) = "(" ++ showExpr e1 ++ " + " ++ showExpr e2 ++ ")"
+showFactor (Bin MulOp e1 e2) =      showFactor e1 ++ " * " ++ showFactor e2
 --------------------------------------------------------------------------------
 -- * A4
 -- Make Expr and instance of Arbitrary.
