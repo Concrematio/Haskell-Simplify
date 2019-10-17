@@ -56,8 +56,8 @@ showExpr (Expo 1)          = "x"
 showExpr (Expo n)          = "x^" ++ show n
 
 
-showFactor ex@(Bin AddOp _ _) = "(" ++ showExpr ex ++ ")"
-showFactor ex                 = showExpr ex
+showFactor e@(Bin AddOp _ _) = "(" ++ showExpr e ++ ")"
+showFactor e                 = showExpr e
 --------------------------------------------------------------------------------
 -- * A4
 -- Make Expr and instance of Arbitrary.
@@ -76,13 +76,13 @@ instance Arbitrary Expr
 
 rExpr :: Int -> Gen Expr
 rExpr 0 = rConst
-rExpr n | n>0 = do op <- elements [(Bin MulOp),(Bin AddOp)]
-                   l  <- choose (0, n-1)
-                   e1 <- rExpr l
-                   e2 <- rExpr (n-1 - l)
-                   return (op e1 e2)
+rExpr n | n > 0 = do op <- elements [Bin MulOp, Bin AddOp]
+                     l  <- choose (0, n-1)
+                     e1 <- rExpr l
+                     e2 <- rExpr (n-1 - l)
+                     return (op e1 e2)
 
-rConst = do n <- choose (0,9)
+rConst = do n  <- choose (0,9)
             op <- elements [Const, Expo]
             return (op n)
 
@@ -92,10 +92,10 @@ rConst = do n <- choose (0,9)
 -- evaluates it
 
 eval :: Int -> Expr -> Int
-eval x (Expo n)            = x^n
-eval _ (Const n)           = n
-eval x (Bin MulOp ex1 ex2) = eval x ex1 * eval x ex2
-eval x (Bin AddOp ex1 ex2) = eval x ex1 + eval x ex2
+eval x (Expo n)          = x^n
+eval _ (Const n)         = n
+eval x (Bin MulOp e1 e2) = eval x e1 * eval x e2
+eval x (Bin AddOp e1 e2) = eval x e1 + eval x e2
 
 --------------------------------------------------------------------------------
 -- * A6
@@ -106,17 +106,17 @@ eval x (Bin AddOp ex1 ex2) = eval x ex1 + eval x ex2
 -- by solving the smaller problems and combining them in the right way.
 
 exprToPoly :: Expr -> Poly
-exprToPoly (Const n)           = fromList [n]
-exprToPoly (Expo n)            = fromList (1:replicate n 0)
-exprToPoly (Bin AddOp ex1 ex2) = exprToPoly ex1 + exprToPoly ex2
-exprToPoly (Bin MulOp ex1 ex2) = exprToPoly ex1 * exprToPoly ex2
+exprToPoly (Const n)         = fromList [n]
+exprToPoly (Expo n)          = fromList (1:replicate n 0)
+exprToPoly (Bin AddOp e1 e2) = exprToPoly e1 + exprToPoly e2
+exprToPoly (Bin MulOp e1 e2) = exprToPoly e1 * exprToPoly e2
 
 -- Define (and check) prop_exprToPoly, which checks that evaluating the
 -- polynomial you get from exprToPoly gives the same answer as evaluating
 -- the expression
 
 prop_exprToPoly :: Int -> Expr -> Bool
-prop_exprToPoly n ex = eval n ex == evalPoly n (exprToPoly ex)
+prop_exprToPoly x e = eval x e == evalPoly x (exprToPoly e)
 
 --------------------------------------------------------------------------------
 -- * A7
@@ -125,7 +125,7 @@ polyToExpr :: Poly -> Expr
 polyToExpr pol = listToExpr 0 $ reverse $ toList pol
   where
     listToExpr :: Int -> [Int] -> Expr
-    listToExpr _ []     = Const 0
+    listToExpr _ []     = Const 0 --
     listToExpr 0 [x]    = Const x
     listToExpr n (0:xs) = listToExpr (n+1) xs
     listToExpr 0 (x:xs) = Bin AddOp (Const x) (listToExpr 1 xs)
@@ -151,19 +151,20 @@ simplify = polyToExpr . exprToPoly
 -- Write a quickCheck property
 prop_noJunk :: Expr -> Bool
 prop_noJunk expr = noJunk (simplify expr)
+  where
+    noJunk (Bin _ (Const n) (Const m))
+        | n == 0 || m == 0 = False
+
+    noJunk (Bin MulOp (Const n) (Const m))
+        | n == 1 || m == 1 = False
+
+    noJunk (Bin _ e1 e2) = prop_noJunk e1 || prop_noJunk e2
+    noJunk (Expo 0)        = False
+    noJunk _               = True
 --that checks that a simplified expression does not contain any "junk":
 --where junk is defined to be multiplication by one or zero,
 --addition of zero, addition or multiplication of numbers, or x to the
 --power zero. (You may need to fix A7)
 
-noJunk (Bin _ (Const n) (Const m))
-  | n == 0 || m == 0 = False
 
-noJunk (Bin MulOp (Const n) (Const m))
-  | n == 1 || m == 1 = False
-
-noJunk (Expo 0)        = False
-noJunk (Expo n)        = True
-noJunk (Const n)       = True
-noJunk (Bin _ ex1 ex2) = prop_noJunk ex1 || prop_noJunk ex2
 --------------------------------------------------------------------------------
