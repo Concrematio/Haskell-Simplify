@@ -26,7 +26,7 @@ ex1 = Bin AddOp (Const 4) (Const 3) -- 4 + 3     = 7
 ex0 = Bin AddOp (Expo 4)  (Const 3)
 ex2 = Bin MulOp (Const 6) (Const 9) -- 6 * 9     = 54
 ex3 = Bin AddOp (ex1) (ex2)         -- 7 + 54    = 61
-ex4 = Bin MulOp ex3 (Expo 5)       -- 61 * 5    = 305
+ex4 = Bin MulOp ex3 (Expo 5)        -- 61 * 5    = 305
 ex5 = Bin MulOp ex4 (Expo 4)        -- 305 * x^4 = 190625
 ex6 = Bin AddOp ex4 ex5
 
@@ -71,20 +71,17 @@ showFactor e                 = showExpr e
 
 
 instance Arbitrary Expr
-  where arbitrary = do n <- choose (1,3)
-                       rExpr n
+  where arbitrary = do rExpr =<< choose (1,4)
 
 rExpr :: Int -> Gen Expr
-rExpr 0 = rConst
-rExpr n | n > 0 = do op <- elements [Bin MulOp, Bin AddOp]
-                     l  <- choose (0, n-1)
+rExpr 0 = rSimple
+rExpr n | n > 0 = do l  <- choose (0, n-1)
                      e1 <- rExpr l
                      e2 <- rExpr (n-1 - l)
-                     return (op e1 e2)
+                     return =<< elements [Bin MulOp e1 e2, Bin AddOp e1 e2]
 
-rConst = do n  <- choose (0,9)
-            op <- elements [Const, Expo]
-            return (op n)
+rSimple = do n <- choose (0,9)
+             return =<< elements [Const n, Expo n]
 
 --------------------------------------------------------------------------------
 -- * A5
@@ -122,10 +119,10 @@ prop_exprToPoly x e = eval x e == evalPoly x (exprToPoly e)
 -- * A7
 -- Now define the function going in the other direction,
 polyToExpr :: Poly -> Expr
-polyToExpr pol = listToExpr 0 $ reverse $ toList pol
+polyToExpr poly = listToExpr 0 $ reverse $ toList poly
   where
     listToExpr :: Int -> [Int] -> Expr
-    listToExpr _ []     = Const 0 --
+    listToExpr _ []     = Const 0 -- toList (fromList [0]) returns []!
     listToExpr 0 [x]    = Const x
     listToExpr n (0:xs) = listToExpr (n+1) xs
     listToExpr 0 (x:xs) = Bin AddOp (Const x) (listToExpr 1 xs)
@@ -136,15 +133,16 @@ polyToExpr pol = listToExpr 0 $ reverse $ toList pol
 
 -- Write (and check) a quickCheck property for this function similar to
 -- question 6.
-prop_polyToExpr n pol = eval n (polyToExpr pol) == evalPoly n pol
+prop_polyToExpr x poly = eval x (polyToExpr poly) == evalPoly x poly
 
 --------------------------------------------------------------------------------
 -- * A8
 -- Write a function
 simplify :: Expr -> Expr
+simplify = polyToExpr . exprToPoly
 -- which simplifies an expression by converting it to a polynomial
 -- and back again
-simplify = polyToExpr . exprToPoly
+
 
 --------------------------------------------------------------------------------
 -- * A9
