@@ -25,7 +25,7 @@ data Expr = Const Int
 ex1 = Bin AddOp (Const 4) (Const 3) -- 4 + 3     = 7
 ex0 = Bin AddOp (Expo 4)  (Const 3)
 ex2 = Bin MulOp (Const 6) (Const 9) -- 6 * 9     = 54
-ex3 = Bin AddOp (ex1) (ex2)         -- 7 + 54    = 61
+ex3 = Bin AddOp ex1 ex2         -- 7 + 54    = 61
 ex4 = Bin MulOp ex3 (Expo 5)        -- 61 * 5    = 305
 ex5 = Bin MulOp ex4 (Expo 4)        -- 305 * x^4 = 190625
 ex6 = Bin AddOp ex4 ex5
@@ -71,17 +71,17 @@ showFactor e                 = showExpr e
 
 
 instance Arbitrary Expr
-  where arbitrary = do rExpr =<< choose (1,4)
+  where arbitrary = rExpr =<< choose (1,4)
 
 rExpr :: Int -> Gen Expr
 rExpr 0 = rSimple
 rExpr n | n > 0 = do l  <- choose (0, n-1)
                      e1 <- rExpr l
                      e2 <- rExpr (n-1 - l)
-                     return =<< elements [Bin MulOp e1 e2, Bin AddOp e1 e2]
+                     elements [Bin MulOp e1 e2, Bin AddOp e1 e2]
 
 rSimple = do n <- choose (0,9)
-             return =<< elements [Const n, Expo n]
+             elements [Const n, Expo n]
 
 --------------------------------------------------------------------------------
 -- * A5
