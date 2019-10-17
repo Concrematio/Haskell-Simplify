@@ -23,11 +23,12 @@ data Expr = Const Int
 
 
 ex1 = Bin AddOp (Const 4) (Const 3) -- 4 + 3     = 7
-ex0 = Bin AddOp (Expo 4) (Const 3)
+ex0 = Bin AddOp (Expo 4)  (Const 3)
 ex2 = Bin MulOp (Const 6) (Const 9) -- 6 * 9     = 54
 ex3 = Bin AddOp (ex1) (ex2)         -- 7 + 54    = 61
-ex4 = Bin MulOp ex3 (Const 5)       -- 61 * 5    = 305
+ex4 = Bin MulOp ex3 (Expo 5)       -- 61 * 5    = 305
 ex5 = Bin MulOp ex4 (Expo 4)        -- 305 * x^4 = 190625
+ex6 = Bin AddOp ex4 ex5
 
 --------------------------------------------------------------------------------
 -- * A2
@@ -121,13 +122,21 @@ prop_exprToPoly n ex = eval n ex == evalPoly n (exprToPoly ex)
 -- * A7
 -- Now define the function going in the other direction,
 polyToExpr :: Poly -> Expr
+polyToExpr pol = listToExpr 0 $ reverse $ toList pol
+  where
+    listToExpr :: Int -> [Int] -> Expr
+    listToExpr _ []     = Const 0
+    listToExpr 0 [x]    = Const x
+    listToExpr n (0:xs) = listToExpr (n+1) xs
+    listToExpr 0 (x:xs) = Bin AddOp (Const x) (listToExpr 1 xs)
+    listToExpr n [x]    = Bin MulOp (Const x) (Expo n)
+    listToExpr n (x:xs) = Bin AddOp (Bin MulOp (Const x) (Expo n)) (listToExpr (n+1) xs)
 
-polyToExpr = undefined
 
 
 -- Write (and check) a quickCheck property for this function similar to
 -- question 6.
-prop_polyToExpr = undefined
+prop_polyToExpr n pol = eval n (polyToExpr pol) == evalPoly n pol
 
 --------------------------------------------------------------------------------
 -- * A8
@@ -135,18 +144,26 @@ prop_polyToExpr = undefined
 simplify :: Expr -> Expr
 -- which simplifies an expression by converting it to a polynomial
 -- and back again
-simplify = undefined
+simplify = polyToExpr . exprToPoly
 
 --------------------------------------------------------------------------------
 -- * A9
 -- Write a quickCheck property
 prop_noJunk :: Expr -> Bool
-
+prop_noJunk expr = noJunk (simplify expr)
 --that checks that a simplified expression does not contain any "junk":
 --where junk is defined to be multiplication by one or zero,
 --addition of zero, addition or multiplication of numbers, or x to the
 --power zero. (You may need to fix A7)
 
-prop_noJunk = undefined
+noJunk (Bin _ (Const n) (Const m))
+  | n == 0 || m == 0 = False
 
+noJunk (Bin MulOp (Const n) (Const m))
+  | n == 1 || m == 1 = False
+
+noJunk (Expo 0)        = False
+noJunk (Expo n)        = True
+noJunk (Const n)       = True
+noJunk (Bin _ ex1 ex2) = prop_noJunk ex1 || prop_noJunk ex2
 --------------------------------------------------------------------------------
