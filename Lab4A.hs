@@ -19,7 +19,7 @@ data Expr = Const Int
 -- * A2
 -- Property of an Expr: Exponents should never be negative
 prop_Expr :: Expr -> Bool
-prop_Expr (Expo n)      = n > 0
+prop_Expr (Expo n)      = n >= 0
 prop_Expr (Bin _ e1 e2) = prop_Expr e1 && prop_Expr e2
 prop_Expr _             = True
 
@@ -29,32 +29,32 @@ prop_Expr _             = True
 instance Show Expr where
   show = showExpr
 
+-- Show function for expressions
 showExpr :: Expr -> String
 showExpr (Const n)         = show n
-showExpr (Bin AddOp e1 e2) = showExpr e1   ++ " + " ++ showExpr e2
-showExpr (Bin MulOp e1 e2) = showFactor e1 ++ " * " ++ showFactor e2
 showExpr (Expo 1)          = "x"
 showExpr (Expo n)          = "x^" ++ show n
-
-
-showFactor e@(Bin AddOp _ _) = "(" ++ showExpr e ++ ")"
-showFactor e                 = showExpr e
+showExpr (Bin AddOp e1 e2) = showExpr e1   ++ " + " ++ showExpr e2
+showExpr (Bin MulOp e1 e2) = showFactor e1 ++ " * " ++ showFactor e2
+  where
+    showFactor e@(Bin AddOp _ _) = "(" ++ showExpr e ++ ")"
+    showFactor e                 = showExpr e
 
 --------------------------------------------------------------------------------
 -- * A4
 -- Expr is an instance of Arbitrary
 instance Arbitrary Expr
-  where arbitrary = rExpr =<< choose (1,4)
+  where
+    arbitrary = rExpr =<< choose (1,4)
+      where
+        rExpr :: Int -> Gen Expr
+        rExpr 0 = do n <- choose (-9,9)
+                     elements [Const n, Expo (abs n)]
 
-rExpr :: Int -> Gen Expr
-rExpr 0 = rSimple
-rExpr n | n > 0 = do l  <- choose (0, n-1)
+        rExpr n = do l  <- choose (0, n-1)
                      e1 <- rExpr l
                      e2 <- rExpr (n-1 - l)
                      elements [Bin MulOp e1 e2, Bin AddOp e1 e2]
-
-rSimple = do n <- choose (0,9)
-             elements [Const n, Expo n]
 
 --------------------------------------------------------------------------------
 -- * A5
@@ -67,14 +67,15 @@ eval x (Bin AddOp e1 e2) = eval x e1 + eval x e2
 
 --------------------------------------------------------------------------------
 -- * A6
--- Converts a expression to an polynomial
+-- Converts an expression to a polynomial
 exprToPoly :: Expr -> Poly
 exprToPoly (Const n)         = fromList [n]
 exprToPoly (Expo n)          = fromList (1:replicate n 0)
 exprToPoly (Bin AddOp e1 e2) = exprToPoly e1 + exprToPoly e2
 exprToPoly (Bin MulOp e1 e2) = exprToPoly e1 * exprToPoly e2
 
-
+-- Property of exprToPoly: evaluating an expression should be equal to
+-- converting the expression to a polynomial and then evaluating it
 prop_exprToPoly :: Int -> Expr -> Bool
 prop_exprToPoly x e = eval x e == evalPoly x (exprToPoly e)
 
@@ -82,18 +83,16 @@ prop_exprToPoly x e = eval x e == evalPoly x (exprToPoly e)
 -- * A7
 -- Converts a polynomial to an expression
 polyToExpr :: Poly -> Expr
-polyToExpr poly = listToExpr 0 $ reverse $ toList poly
+polyToExpr poly = toExpr 0 $ reverse $ toList poly
   where
-    listToExpr :: Int -> [Int] -> Expr
-    listToExpr _ []     = Const 0 -- toList (fromList [0]) returns []!
-    listToExpr 0 [x]    = Const x
-    listToExpr n (0:xs) = listToExpr (n+1) xs
-    listToExpr 0 (x:xs) = Bin AddOp (Const x) (listToExpr 1 xs)
-    listToExpr n [x]    = Bin MulOp (Const x) (Expo n)
-    listToExpr n (x:xs) = Bin AddOp (Bin MulOp (Const x) (Expo n)) (listToExpr (n+1) xs)
+    toExpr _ []     = Const 0 -- toList (fromList [0]) returns []!
+    toExpr 0 [x]    = Const x
+    toExpr n (0:xs) = toExpr (n+1) xs
+    toExpr 0 (x:xs) = Bin AddOp (Const x) (toExpr 1 xs)
+    toExpr n [x]    = Bin MulOp (Const x) (Expo n)
+    toExpr n (x:xs) = Bin AddOp (Bin MulOp (Const x) (Expo n)) (toExpr (n+1) xs)
 
-
--- Property of a polyToExpr: evaluating a plynomial should be equal to
+-- Property of polyToExpr: evaluating a plynomial should be equal to
 -- converting the polynomial to an expression and then evaluating it
 prop_polyToExpr :: Int -> Poly -> Bool
 prop_polyToExpr x poly = eval x (polyToExpr poly) == evalPoly x poly
