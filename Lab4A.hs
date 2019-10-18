@@ -1,5 +1,5 @@
--- Authors:
--- Date:
+-- Authors: Magnus Eld, Ida Franzén Karlsson, Viktor Hauge
+-- Date: 2019-10-18
 
 import Poly
 import Test.QuickCheck
