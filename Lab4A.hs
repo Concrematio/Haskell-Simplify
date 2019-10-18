@@ -4,7 +4,7 @@
 import Poly
 import Test.QuickCheck
 
-
+--
 -- Use the following simple data type for binary operators
 data BinOp = AddOp | MulOp
 
