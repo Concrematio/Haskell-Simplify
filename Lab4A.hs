@@ -17,7 +17,7 @@ data Expr = Const Int
 
 --------------------------------------------------------------------------------
 -- * A2
--- Property of an Expr: Exponents should never be negative
+-- Property of Expr: Exponents should never be negative
 prop_Expr :: Expr -> Bool
 prop_Expr (Expo n)      = n >= 0
 prop_Expr (Bin _ e1 e2) = prop_Expr e1 && prop_Expr e2
