@@ -89,6 +89,7 @@ polyToExpr poly = toExpr 0 $ reverse $ toList poly
     toExpr 0 [x]    = Const x
     toExpr n (0:xs) = toExpr (n+1) xs
     toExpr 0 (x:xs) = Bin AddOp (Const x) (toExpr 1 xs)
+    toExpr n [1]    = Expo n
     toExpr n [x]    = Bin MulOp (Const x) (Expo n)
     toExpr n (x:xs) = Bin AddOp (Bin MulOp (Const x) (Expo n)) (toExpr (n+1) xs)
 
@@ -111,14 +112,17 @@ simplify = polyToExpr . exprToPoly
 prop_noJunk :: Expr -> Bool
 prop_noJunk expr = noJunk (simplify expr)
   where
-    noJunk (Bin _ (Const n) (Const m))
-        | n == 0 || m == 0 = False
+    noJunk (Bin _ (Const _) (Const _)) = False
+    noJunk (Bin _ (Const 0)  _       ) = False
+    noJunk (Bin _  _        (Const 0)) = False
 
-    noJunk (Bin MulOp (Const n) (Const m))
-        | n == 1 || m == 1 = False
+    noJunk (Bin MulOp (Const 1) _) = False
+    noJunk (Bin MulOp _ (Const 1)) = False
 
-    noJunk (Bin _ e1 e2) = prop_noJunk e1 || prop_noJunk e2
-    noJunk (Expo 0)        = False
-    noJunk _               = True
+    noJunk (Expo 0) = False
+
+    noJunk (Bin _ e1 e2) = noJunk e1 || noJunk e2
+
+    noJunk _ = True
 
 --------------------------------------------------------------------------------
